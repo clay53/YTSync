@@ -28,11 +28,23 @@ def sync (args):
     with open('playlists/' + args['playlist_name'] + "/sync.data", "w") as f:
         f.write(','.join(syncedTracks))
     while True:
-        response = ytda.playlist_items_list_by_playlist_id(ytda.client,
-            part='contentDetails',
-            maxResults=args['update_length'],
-            playlistId=args['playlist_id']
-        )
+        attempt = 0
+        success=False
+        response=None
+        while success==False and attempt < 5:
+            try:
+                print(args['playlist_name'] + " tick attempt " + str(attempt))
+                response = ytda.playlist_items_list_by_playlist_id(ytda.client,
+                    part='contentDetails',
+                    maxResults=args['update_length'],
+                    playlistId=args['playlist_id']
+                )
+            except:
+                print("Sync failed to get response " + args['playlist_name'] + " attempt: " + str(attempt))
+                attempt+=1
+                time.sleep(1)
+            else:
+                success=True
         for track in response.get('items'):
             id = track.get('contentDetails').get('videoId')
             with open('playlists/' + args['playlist_name'] + "/sync.data", "r+") as f:
@@ -55,12 +67,24 @@ def catchup (playlist_name, playlist_id, workers):
     working = True
     workersn = 0
     while working:
-        response = ytda.playlist_items_list_by_playlist_id(ytda.client,
-            part='contentDetails',
-            maxResults=50,
-            pageToken=pageToken,
-            playlistId=playlist_id
-        )
+        print(playlist_id)
+        attempt = 0
+        success=False
+        response=None
+        while success==False and attempt < 5:
+            try:
+                response = ytda.playlist_items_list_by_playlist_id(ytda.client,
+                    part='contentDetails',
+                    maxResults=50,
+                    pageToken=pageToken,
+                    playlistId=playlist_id
+                )
+            except:
+                print("Catchup failed to get response " + playlist_name + " attempt: " + str(attempt))
+                attempt+=1
+                time.sleep(1)
+            else:
+                success=True
         if 'nextPageToken' in response:
             pageToken = response.get('nextPageToken')
         else:
@@ -90,5 +114,7 @@ def catchup (playlist_name, playlist_id, workers):
                     q.put(workersn)
                     workersn += 1
             results.append(id)
-    q.join()
+    if workersn > 0:
+        print(playlist_name + ".catchup is waiting for q...")
+        q.join()
     return results
