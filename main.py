@@ -1,10 +1,7 @@
-import time
-
 import playlist
 import threading
 from queue import Queue
 
-import config
 
 # Create the queue and threader 
 q = Queue()
@@ -24,21 +21,24 @@ def threader(job, args):
         # completed with the job
         q.task_done()
 
-for plist in config.playlists:
-    print(plist)
-    t = threading.Thread(target=threader, args=(playlist.sync, plist))
-    t.daemon = False
-    t.start()
-    time.sleep(1)
+t = threading.Thread(target=threader, args=(playlist.sync, {
+    'playlist_name': 'ClaytonMusic',
+    'playlist_id': 'PLaHvpZQLFcTphP6szbVI9ig2fH8vn5f91',
+    'update_length': 5,
+    'update_freq': 5,
+    'workers': 61
+}))
+t.daemon = False
+t.start()
 
-# s = threading.Thread(target=threader, args=(playlist.sync, {
-#     'playlist_name': 'Duuuuh',
-#     'playlist_id': 'PLaHvpZQLFcTphP6szbVI9ig2fH8vn5f91',
-#     'update_length': 5,
-#     'update_freq': 5
-# }))
-# s.daemon = False
-# s.start()
+s = threading.Thread(target=threader, args=(playlist.sync, {
+    'playlist_name': 'Duuuuh',
+    'playlist_id': 'PLaHvpZQLFcTphP6szbVI9ig2fH8vn5f91',
+    'update_length': 5,
+    'update_freq': 5
+}))
+s.daemon = False
+s.start()
 
 for worker in range(2):
     q.put(worker)
