@@ -26,7 +26,7 @@ t = threading.Thread(target=threader, args=(playlist.sync, {
     'playlist_id': 'PLaHvpZQLFcTphP6szbVI9ig2fH8vn5f91',
     'update_length': 5,
     'update_freq': 5,
-    'workers': 61
+    'workers': 0
 }))
 t.daemon = False
 t.start()
@@ -35,7 +35,7 @@ s = threading.Thread(target=threader, args=(playlist.sync, {
     'playlist_name': 'Duuuuh',
     'playlist_id': 'PLaHvpZQLFcTphP6szbVI9ig2fH8vn5f91',
     'update_length': 5,
-    'update_freq': 5
+    'update_freq': 0
 }))
 s.daemon = False
 s.start()
