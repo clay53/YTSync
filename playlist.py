@@ -23,7 +23,7 @@ def threader(job, args):
         q.task_done()
 
 def sync (args):
-    syncedTracks = catchup(args['playlist_name'], args['playlist_id'], args['workers'])
+    syncedTracks = catchup(args['playlist_name'], args['playlist_id'], args['music'], args['workers'])
     print(syncedTracks)
     with open('playlists/' + args['playlist_name'] + "/sync.data", "w") as f:
         f.write(','.join(syncedTracks))
@@ -52,7 +52,8 @@ def sync (args):
                     print(id)
                     ydl({
                         'folder': 'playlists/' + args['playlist_name'],
-                        'url': 'https://www.youtube.com/watch?v=' + id
+                        'url': 'https://www.youtube.com/watch?v=' + id,
+                        'music': args['music']
                     })
                     f.write(',' + id)
         time.sleep(args['update_freq'])
@@ -60,7 +61,7 @@ def sync (args):
     print ("Unexpected end of thread with playlist_id of: " + args['playlist_id'] + " hanging...")
 
 
-def catchup (playlist_name, playlist_id, workers):
+def catchup (playlist_name, playlist_id, music, workers):
     print(playlist_id + " is catching up...")
     results = []
     pageToken = None
@@ -96,23 +97,35 @@ def catchup (playlist_name, playlist_id, workers):
                     if id not in f.read():
                         t = threading.Thread(target=threader, args=(ydl, {
                             'folder': 'playlists/' + playlist_name,
-                            'url': 'https://www.youtube.com/watch?v=' + id
+                            'url': 'https://www.youtube.com/watch?v=' + id,
+                            'music': music
                         }))
                         t.daemon = False
                         t.start()
-                        if (workersn < workers or workers == 0):
-                            q.put(workersn)
-                            workersn += 1
+                        q.put(workersn)
+                        workersn += 1
+                        print(workersn)
+                        print(workers)
+                        if (not (workersn < workers or workers == 0)):
+                            print(playlist_name + ".catchup is waiting for q...")
+                            q.join()
+                            workersn = 0
             except:
                 t = threading.Thread(target=threader, args=(ydl, {
                     'folder': 'playlists/' + playlist_name,
-                    'url': 'https://www.youtube.com/watch?v=' + id
+                    'url': 'https://www.youtube.com/watch?v=' + id,
+                    'music': music
                 }))
                 t.daemon = False
                 t.start()
-                if (workersn < workers or workers == 0):
-                    q.put(workersn)
-                    workersn += 1
+                q.put(workersn)
+                workersn += 1
+                print(workersn)
+                print(workers)
+                if (not (workersn < workers or workers == 0)):
+                    print(playlist_name + ".catchup is waiting for q...")
+                    q.join()
+                    workersn = 0
             results.append(id)
     if workersn > 0:
         print(playlist_name + ".catchup is waiting for q...")
